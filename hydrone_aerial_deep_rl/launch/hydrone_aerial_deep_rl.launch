@@ -1,0 +1,61 @@
+<!-- Spawns the Hydrone vehicle in the simulation -->
+<launch>
+  <arg name="debug" default="0" doc="Starts the Gazebo plugins in debug mode for more verbose output"/>
+
+  <arg name="x" default="0" doc="X coordinate of the vehicle's initial position (in ENU)"/>
+  <arg name="y" default="0" doc="Y coordinate of the vehicle's initial position (in ENU)"/>
+  <arg name="z" default="2.5" doc="Z coordinate of the vehicle's initial position (in ENU)"/>
+  <arg name="roll" default="0.0" doc="Roll angle of the vehicle's initial orientation"/>
+  <arg name="pitch" default="0.0" doc="Pitch angle of the vehicle's initial orientation"/>
+  <arg name="yaw" default="0.0" doc="Yaw angle of the vehicle's initial orientation"/>
+
+  <arg name="mode" default="default" doc="Vehicle's build configuration mode"/>
+  <arg name="namespace" default="hydrone_aerial" doc="Namespace to spawn the vehicle"/>
+  <arg name="use_simplified_mesh" default="true" doc="Use simplified geometries instead of the mesh"/>
+
+  <arg name="world_name" default="stage_1"/>
+  <arg name="gui" default="true"/>
+  <arg name="paused" default="false"/>
+
+  <arg name="mav_name" default="hydrone_aerial"/>
+  <arg name="model" default="$(find hydrone_aerial_description)/urdf/$(arg mav_name)_base.xacro"/>
+  <arg name="tf_prefix" default="$(optenv ROS_NAMESPACE)"/>
+  <arg name="enable_logging" default="false"/>
+  <arg name="enable_ground_truth" default="true"/>
+  <arg name="log_file" default="$(arg mav_name)"/>
+  <arg name="wait_to_record_bag" default="false"/>
+  <arg name="enable_mavlink_interface" default="false"/>
+
+  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+      <arg name="world_name"  value="$(find hydrone_aerial_deep_rl)/worlds/$(arg world_name).world"/>
+      <arg name="paused" value="$(arg paused)"/>
+      <arg name="use_sim_time" value="true"/>
+      <arg name="gui" value="$(arg gui)"/>
+      <arg name="headless" value="false"/>
+      <arg name="debug" value="false"/>
+      <arg name="verbose" value="true"/>
+  </include>
+
+
+
+  <group ns="$(arg mav_name)">
+    <include file="$(find hydrone_aerial_deep_rl)/launch/spawn_mav.launch">
+      <arg name="mav_name" value="$(arg mav_name)" />
+      <arg name="model" value="$(find hydrone_aerial_description)/urdf/mav_generic_odometry_sensor.gazebo" />
+      <arg name="enable_logging" value="$(arg enable_logging)" />
+      <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+      <arg name="log_file" value="$(arg log_file)"/>
+    </include>
+    <node name="lee_position_controller_node" pkg="rotors_control" type="lee_position_controller_node" output="screen">
+      <rosparam command="load" file="$(find hydrone_aerial_gazebo)/resource/lee_controller_$(arg mav_name).yaml" />
+      <rosparam command="load" file="$(find hydrone_aerial_gazebo)/resource/$(arg mav_name).yaml" />
+      <remap from="odometry" to="odometry_sensor1/odometry" />
+    </node>
+    <node name="hydrone_aerial_deep_rl_vel" pkg="hydrone_aerial_deep_rl" type="velocity.py" output="screen"/>
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+  </group>
+
+
+</launch>
