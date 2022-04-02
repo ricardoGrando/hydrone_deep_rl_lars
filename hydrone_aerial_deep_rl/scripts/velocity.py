@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 import time
 import rospy
 from std_msgs.msg import *
@@ -49,7 +49,7 @@ def position_callback(data):
     trans.rotation.z = data.pose.pose.orientation.z
     trans.rotation.w = data.pose.pose.orientation.w
 
-    cmd_vel.linear.z = 0.1
+    # cmd_vel.linear.z = 0.1
     #cmd_vel.linear.x = 0.0
 
     #cmd_vel.angular.z = 0.5
